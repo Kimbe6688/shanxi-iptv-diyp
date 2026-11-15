@@ -2,7 +2,8 @@ name: build-diyp-txt
 
 on:
   schedule:
-    - cron: "0 */12 * * *"
+    # 源项目 sheriffcheng-gif/my-iptv 每天 UTC 00:00 / 12:00 更新，这里延后 5 分钟
+    - cron: "5 0,12 * * *"
   workflow_dispatch:
 
 permissions:
