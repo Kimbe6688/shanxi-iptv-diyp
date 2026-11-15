@@ -1,0 +1,59 @@
+name: build-diyp-txt
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: 生成分类文件
+        run: python build.py
+
+      - name: 提交结果
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python << 'PYEOF'
+          import os, base64, json, urllib.request
+
+          token = os.environ['GH_TOKEN']
+          repo = 'Kimbe6688/shanxi-iptv-diyp'
+          fname = '山西联通DIYP.txt'
+
+          with open(fname, 'rb') as f:
+              content = base64.b64encode(f.read()).decode()
+
+          url = f'https://api.github.com/repos/{repo}/contents/{urllib.parse.quote(fname)}'
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github.v3+json'
+          }
+
+          req = urllib.request.Request(url, headers=headers)
+          try:
+              resp = urllib.request.urlopen(req)
+              sha = json.loads(resp.read())['sha']
+          except:
+              sha = None
+
+          body = {'message': 'chore: rebuild DIYP txt', 'content': content}
+          if sha:
+              body['sha'] = sha
+
+          data = json.dumps(body).encode()
+          req2 = urllib.request.Request(url, data=data, headers={**headers, 'Content-Type': 'application/json'}, method='PUT')
+          resp2 = urllib.request.urlopen(req2)
+          print('OK:', resp2.status)
+          PYEOF
