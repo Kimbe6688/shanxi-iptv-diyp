@@ -2,21 +2,23 @@ name: build-diyp-txt
 
 on:
   schedule:
-    - cron: "0 */12 * * *"     # 每12小时跑一次（UTC 0点和12点，跟原作者节奏一致）
-  workflow_dispatch:            # 允许你手动点一下立刻跑
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write               # 允许机器人把生成的 TXT 提交回仓库
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
         with:
-          python-version: "3.11"
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
 
       - name: 拉取原源并分类
         run: python build.py
@@ -25,6 +27,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
           git add -A
           git commit -m "chore: rebuild DIYP txt" || echo "no change"
           git push
