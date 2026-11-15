@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -22,7 +24,10 @@ jobs:
         run: python build.py
 
       - name: 提交结果
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -c 'import os,base64,json,urllib.request;token=os.environ["GH_TOKEN"];repo="Kimbe6688/shanxi-iptv-diyp";fname="山西联通DIYP.txt";content=base64.b64encode(open(fname,"rb").read()).decode();url="https://api.github.com/repos/"+repo+"/contents/"+urllib.request.quote(fname);headers={"Authorization":"token "+token,"Accept":"application/vnd.github.v3+json"};sha=None;exec("try:\n req=urllib.request.Request(url,headers=headers)\n resp=urllib.request.urlopen(req)\n sha=json.loads(resp.read())[chr(115)+chr(104)+chr(97)]\nexcept:\n pass");body={"message":"chore: rebuild DIYP txt","content":content};exec("if sha: body[chr(115)+chr(104)+chr(97)]=sha");data=json.dumps(body).encode();req2=urllib.request.Request(url,data=data,headers={**headers,"Content-Type":"application/json"},method="PUT");resp2=urllib.request.urlopen(req2);print("OK:",resp2.status)'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add 山西联通DIYP.txt
+          git commit -m "chore: rebuild DIYP txt" || echo "no changes"
+          git push
