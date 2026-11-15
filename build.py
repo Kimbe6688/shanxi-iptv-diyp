@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-拉取山西联通组播源 -> 按 DIYP 分类写成 TXT
-输出: 山西联通DIYP.txt
-格式:
+拉取山西联通组播源 -> 按分类写成 DIYP TXT 与 M3U
+输出: 山西联通DIYP.txt（DIYP 分类列表）
+      山西联通DIYP.m3u（同一份列表的 M3U 版，group-title 即分类）
+TXT 格式:
     分类,#genre#
     001 频道名,地址
 
@@ -15,7 +16,8 @@ import re
 import urllib.request
 
 SRC = "https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/main/m3u/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9A.m3u"
-OUT = "山西联通DIYP.txt"
+OUT_TXT = "山西联通DIYP.txt"
+OUT_M3U = "山西联通DIYP.m3u"
 
 # ==================== 分类规则 ====================
 # 顺序即优先级：先匹配到的先生效
@@ -94,19 +96,24 @@ def main():
 
     groups = {}
     seen = set()
+    attrs_by_url = {}
+    header = lines[0].strip() if lines and lines[0].startswith("#EXTM3U") else "#EXTM3U"
 
     i = 0
     while i < len(lines):
         line = lines[i].strip()
         if line.startswith("#EXTINF"):
-            disp = line.split(",", 1)[1] if "," in line else "未知"
+            head, _, disp = line.partition(",")
+            attrs = re.sub(r'\s*group-title="[^"]*"', "", head[len("#EXTINF:"):].strip())
+            attrs = re.sub(r"^-1\s*", "", attrs).strip()
             url = ""
             if i + 1 < len(lines) and not lines[i + 1].startswith("#"):
                 url = lines[i + 1].strip()
                 i += 1
-            disp = clean_name(disp)
+            disp = clean_name(disp if disp else "未知")
             if url and url not in seen:
                 seen.add(url)
+                attrs_by_url[url] = attrs
                 groups.setdefault(classify(disp), []).append((disp, url))
         i += 1
 
@@ -120,7 +127,8 @@ def main():
             wx[:] = [x for x in wx if "山西卫视" not in x[0]]
             wx.insert(0, pick_hd(sx))
 
-    out = []
+    m3u = [header]
+    txt = []
     total = 0
     for g in ORDER:
         items = groups.get(g)
@@ -128,16 +136,21 @@ def main():
             continue
         if g == "本省":
             items.sort(key=lambda x: bensheng_key(x[0]))
-        out.append(f"{g},#genre#")
+        txt.append(f"{g},#genre#")
         for idx, (name, url) in enumerate(items, start=1):
-            out.append(f"{idx:03d} {name},{url}")
+            txt.append(f"{idx:03d} {name},{url}")
+            attrs = attrs_by_url.get(url, f'tvg-id="{name}"')
+            m3u.append(f'#EXTINF:-1 {attrs} group-title="{g}",{name}')
+            m3u.append(url)
             total += 1
-        out.append("")
+        txt.append("")
 
-    with open(OUT, "w", encoding="utf-8") as f:
-        f.write("\n".join(out))
+    with open(OUT_TXT, "w", encoding="utf-8") as f:
+        f.write("\n".join(txt))
+    with open(OUT_M3U, "w", encoding="utf-8") as f:
+        f.write("\n".join(m3u) + "\n")
 
-    print(f"OK 共 {total} 个频道")
+    print(f"OK 共 {total} 个频道 -> {OUT_TXT} / {OUT_M3U}")
     for g in ORDER:
         if g in groups:
             print(f"  {g}: {len(groups[g])}")

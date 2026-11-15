@@ -1,22 +1,22 @@
 # 山西联通 IPTV 订阅源
 
-基于 [sheriffcheng-gif/my-iptv](https://github.com/sheriffcheng-gif/my-iptv) 的山西联通组播源，提供两种订阅方式：**上游 M3U 原源**与**本仓库整理的分类 TXT**。全部由 GitHub Actions 定时完成，无需本地设备常开。
+把 [sheriffcheng-gif/my-iptv](https://github.com/sheriffcheng-gif/my-iptv) 的山西联通组播源，整理成**带分类的 M3U 主文件**与 **DIYP TXT 备选**。两个文件由同一次 GitHub Actions 构建生成，无需本地设备常开。
 
 ## 订阅地址
 
 VsTV、DIYP 影音等播放器是「空壳 APP」，本身不带频道，需在设置里填一个订阅地址。**以下二选一，不要同时填。**
 
-### M3U（推荐：频道最全、最实时）
+### M3U（推荐：带分类、台标与 EPG）
 
-上游原源，标准 M3U，自带台标与 EPG；上游一更新，刷新订阅即生效，不经过本仓库。缺点是所有频道共用一个 `group-title`，找台要按原始顺序翻。国内访问 raw 慢时，用下方 M3U 的 GitHub Proxy 或 jsDelivr 版。
+本仓库生成，按「本省 / 央视 / 影院 / 4K / 卫视 / 其他」用 `group-title` 分组，保留上游的台标与 EPG 节目单。标准 M3U，支持 M3U 的播放器都能订阅。
 
 ```
-https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/main/m3u/山西联通.m3u
+https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/山西联通DIYP.m3u
 ```
 
-### TXT（备选：带分类整理）
+### TXT（备选：DIYP 分类列表）
 
-本仓库在 M3U 基础上整理出分类、三位序号与「本省 / 卫视」置顶，电视上更好找台。DIYP 格式，每行逗号后就是播放地址，**不需要再另填 M3U**。
+同一份频道列表的 DIYP 版本，`分类名,#genre#` 分组、三位序号，逗号后就是播放地址，**不需要再另填 M3U**。
 
 ```
 https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/山西联通DIYP.txt
@@ -28,16 +28,20 @@ https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/山西联通DIYP.txt
 
 **M3U**
 
-- 编码版 + jsDelivr CDN 加速（播放器不认中文路径、或国内访问 raw 慢时优先用）：
+- 编码版（播放器不认中文路径）：
 
 ```
-https://cdn.jsdelivr.net/gh/sheriffcheng-gif/my-iptv@main/m3u/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9A.m3u
+https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.m3u
 ```
 
-- GitHub Proxy 加速：
+- GitHub Proxy 加速 / raw 备用（jsDelivr 缓存未刷新时用 raw）：
 
 ```
-https://gh-proxy.com/https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/main/m3u/山西联通.m3u
+https://gh-proxy.com/https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.m3u
+```
+
+```
+https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.m3u
 ```
 
 **TXT**
@@ -48,7 +52,7 @@ https://gh-proxy.com/https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/
 https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.txt
 ```
 
-- GitHub Proxy 加速 / raw 备用（jsDelivr 缓存未刷新时用 raw）：
+- GitHub Proxy 加速 / raw 备用：
 
 ```
 https://gh-proxy.com/https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.txt
@@ -60,7 +64,7 @@ https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A
 
 ## 节目列表格式
 
-TXT 订阅地址返回的真实片段：
+订阅地址返回的真实片段（TXT 版；M3U 版用 `group-title="分类名"` 表达同样的分组）：
 
 ```
 本省,#genre#
@@ -72,7 +76,6 @@ TXT 订阅地址返回的真实片段：
 卫视,#genre#
 001 山西卫视HD,http://61.134.254.2:9003/rtp/226.0.2.152:9128
 002 重庆卫视HD,http://61.134.254.2:9003/rtp/226.0.2.174:9304
-003 江苏卫视HD,http://61.134.254.2:9003/rtp/226.0.2.176:9320
 ```
 
 - `分类名,#genre#` 是分组标题，输出顺序固定：**本省 → 央视 → 影院 → 4K → 卫视 → 其他**
@@ -84,7 +87,7 @@ TXT 订阅地址返回的真实片段：
 
 ## 更新机制
 
-**Q：上游 M3U 更新了，我填的 TXT 会跟着更新吗？** 会。填的是订阅 URL，播放器每次刷新都会重新拉取，不用换地址、不用重新导入。M3U 直接取上游最新；TXT 要等本仓库下一次构建重新生成，用分类和置顶换来最多一轮的延迟。
+**Q：上游源更新了，我填的地址会跟着更新吗？** 会。填的是订阅 URL，播放器每次刷新都会重新拉取，不用换地址、不用重新导入。M3U 和 TXT 由本仓库**同一次构建一起生成**，因此都要等下一次构建（每 12 小时）才拿到新一轮的频道与播放地址。
 
 GitHub Actions 的 `cron` **一律按 UTC**。上游声明每天 UTC 00:00 / 12:00 更新，本仓库延后 5 分钟构建：
 
@@ -95,8 +98,8 @@ GitHub Actions 的 `cron` **一律按 UTC**。上游声明每天 UTC 00:00 / 12:
 
 即「12 点」是 UTC 的中午，对应北京**晚上 8 点**，不是北京时间的中午 12 点。
 
-- 构建流程：拉取 M3U（raw → gh-proxy → ghfast 兜底）→ 分类 → 写 TXT → 提交回仓库；内容无变化不提交，`concurrency` 防止并发冲突
-- 上游定时任务实际常延迟数小时，因此「+5 分钟」只是配置对齐，TXT 可能取到上一轮的 M3U，下一次构建补上；要实时就用 M3U
+- 构建流程：拉取上游 M3U（raw → gh-proxy → ghfast 兜底）→ 分类 → 同时写出 TXT 与 M3U → 提交回仓库；内容无变化不提交，`concurrency` 防止并发冲突
+- 上游定时任务实际常延迟数小时，因此「+5 分钟」只是配置对齐，可能取到上一轮的源，下一次构建补上
 - jsDelivr 有缓存，刚更新完可能稍晚才刷出，急用可取 raw 地址
 
 手动触发：仓库 → `Actions` → `build-diyp-txt` → `Run workflow`
