@@ -15,19 +15,14 @@ OUT = "山西联通DIYP.txt"
 
 # ==================== 分类规则 ====================
 # 顺序即优先级：先匹配到的先生效
-# 注意：「本省」必须排在「卫视」前面，这样"山西卫视"才会被截留到本省
 RULES = [
-    # 4K：先挑出来，避免被"卫视/央视"抢走
     (r"4K|4k|2160|超清|8K",                                   "4K"),
 
-    # 影院：付费电影/剧场/纪实专题类
     (r"CHC|家庭影院|影迷|动作电影|剧场|电影|院线|HBO|"
      r"风云|金鹰|动漫秀场|都市剧场|海外剧场|早期教育|第一剧场",        "影院"),
 
-    # 央视：CCTV 全系 + CGTN + 中国教育
     (r"CCTV|央视|CGTN|中国教育|央广|中国气象|央视台球",              "央视"),
 
-    # 本省：山西本地 + 地市 + 矿区企业台（必须在"卫视"之前）
     (r"山西|黄河|太原|大同|临汾|运城|晋中|忻州|阳泉|长治|晋城|朔州|吕梁|"
      r"清徐|古交|阳曲|娄烦|平定|盂县|潞州|襄垣|屯留|黎城|武乡|长钢|晋能|霍州|"
      r"昔阳|寿阳|灵石|稷山|孝义|汾阳|介休|河津|永济|高平|怀仁|山阴|应县|"
@@ -38,15 +33,12 @@ RULES = [
      r"高平|右玉|左云|浑源|阳高|天镇|广灵|灵丘|大同县|"
      r"优购物|购物|好享购|快乐购",                                "本省"),
 
-    # 卫视：省级卫视（此时"山西卫视"已被上面截留）
     (r"卫视",                                                  "卫视"),
 ]
 
-# 最终输出分类顺序（对应你机顶盒截图的排列）
 ORDER = ["本省", "央视", "影院", "4K", "卫视", "其他"]
 
-# ==================== 本省内部排序 ====================
-# 数字越小越靠前；没写进来的山西本地台自动排后面（99）
+# ==================== 本省排序 ====================
 BENSHENG_PRIORITY = [
     ("山西卫视", 0),
     ("山西黄河", 1),
@@ -65,7 +57,7 @@ def bensheng_key(name):
             return rank
     return 99
 
-# ==================== 工具函数 ====================
+# ==================== 工具 ====================
 def classify(name):
     for pat, grp in RULES:
         if re.search(pat, name):
@@ -73,38 +65,27 @@ def classify(name):
     return "其他"
 
 def clean_name(name):
-    """去掉名字里容易干扰分类/显示的标记"""
     name = re.sub(r"[（(]\s*(vip|VIP|标清|高清|HD|SD|超清)\s*[)）]", "", name)
     name = re.sub(r"\s+", " ", name)
     return name.strip()
 
 def fetch_source():
-    """拉原源，失败时自动走 GitHub 加速代理兜底"""
-    mirrors = [
-        SRC,
-        "https://gh-proxy.com/" + SRC,
-        "https://ghfast.top/" + SRC,
-    ]
-    last_err = None
+    mirrors = [SRC, "https://gh-proxy.com/" + SRC, "https://ghfast.top/" + SRC]
     for url in mirrors:
         try:
-            req = urllib.request.Request(
-                url, headers={"User-Agent": "Mozilla/5.0"}
-            )
-            return urllib.request.urlopen(req, timeout=30)\
-                         .read().decode("utf-8", "ignore")
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            return urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "ignore")
         except Exception as e:
-            last_err = e
-            print(f"[warn] 拉取失败，换下一个镜像: {url} -> {e}")
-    raise RuntimeError(f"所有镜像都拉不通: {last_err}")
+            print(f"[warn] 失败: {url} -> {e}")
+    raise RuntimeError("所有镜像都拉不通")
 
 # ==================== 主流程 ====================
 def main():
     text = fetch_source()
     lines = text.splitlines()
 
-    groups = {}     # 分类 -> [(频道名, 地址)]
-    seen = set()    # 地址去重
+    groups = {}
+    seen = set()
 
     i = 0
     while i < len(lines):
@@ -121,22 +102,19 @@ def main():
                 groups.setdefault(classify(disp), []).append((disp, url))
         i += 1
 
-    # 组装输出
     out = []
     total = 0
     for g in ORDER:
         items = groups.get(g)
         if not items:
             continue
-
         if g == "本省":
             items.sort(key=lambda x: bensheng_key(x[0]))
-
         out.append(f"{g},#genre#")
         for idx, (name, url) in enumerate(items, start=1):
             out.append(f"{idx:03d} {name},{url}")
             total += 1
-        out.append("")   # 分类之间空一行，DIYP 解析更稳
+        out.append("")
 
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("\n".join(out))
