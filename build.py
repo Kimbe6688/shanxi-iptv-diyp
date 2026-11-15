@@ -75,6 +75,11 @@ def clean_name(name):
     name = re.sub(r"\s+", " ", name)
     return name.strip()
 
+def epg_id(name):
+    """生成用于匹配 EPG 的台名：去掉 HD/SD/4K 等清晰度后缀。
+    上游 EPG 的台名形如 CCTV1、山西卫视，带后缀会一条都匹配不上。"""
+    return re.sub(r"(2160|超清|高清|标清|8K|4K|HD|SD)+$", "", name, flags=re.I).strip() or name
+
 def fetch_source():
     mirrors = [SRC, "https://gh-proxy.com/" + SRC, "https://ghfast.top/" + SRC]
     for url in mirrors:
@@ -139,7 +144,11 @@ def main():
         txt.append(f"{g},#genre#")
         for idx, (name, url) in enumerate(items, start=1):
             txt.append(f"{idx:03d} {name},{url}")
-            attrs = attrs_by_url.get(url, f'tvg-id="{name}"')
+            eid = epg_id(name)
+            attrs = attrs_by_url.get(url, "")
+            attrs = re.sub(r'tvg-id="[^"]*"', f'tvg-id="{eid}"', attrs).strip()
+            if "tvg-id=" not in attrs:
+                attrs = f'tvg-id="{eid}"'
             m3u.append(f'#EXTINF:-1 {attrs} group-title="{g}",{name}')
             m3u.append(url)
             total += 1
