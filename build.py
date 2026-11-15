@@ -5,6 +5,10 @@
 格式:
     分类,#genre#
     001 频道名,地址
+
+说明:
+    - 保留同一频道的全部清晰度 / 多地址（按 URL 去重），电视端可自行选择。
+    - 「本省」「卫视」两个分类都把 山西卫视 置顶；源里没有则不强制。
 """
 
 import re
@@ -79,6 +83,10 @@ def fetch_source():
             print(f"[warn] 失败: {url} -> {e}")
     raise RuntimeError("所有镜像都拉不通")
 
+def pick_hd(items):
+    """同一频道优先取高清 / 4K 的一条"""
+    return next((x for x in items if re.search(r"4K|8K|2160|超清|HD|高清", x[0], re.I)), items[0])
+
 # ==================== 主流程 ====================
 def main():
     text = fetch_source()
@@ -101,6 +109,16 @@ def main():
                 seen.add(url)
                 groups.setdefault(classify(disp), []).append((disp, url))
         i += 1
+
+    # 「卫视」分类也把 山西卫视 置顶：从本省复制一条（优先高清）。
+    # 源里没有山西卫视时自然跳过，不硬塞。
+    wx = groups.get("卫视")
+    bs = groups.get("本省")
+    if wx is not None and bs:
+        sx = [x for x in bs if "山西卫视" in x[0]]
+        if sx:
+            wx[:] = [x for x in wx if "山西卫视" not in x[0]]
+            wx.insert(0, pick_hd(sx))
 
     out = []
     total = 0
