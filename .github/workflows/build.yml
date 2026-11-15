@@ -13,21 +13,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: 拉取原源并分类
+      - name: 生成分类文件
         run: python build.py
 
-      - name: 提交分类结果
+      - name: 用 API 提交到仓库 (无冲突覆盖)
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-          git add -A
-          git commit -m "chore: rebuild DIYP txt" || echo "no change"
-          git push
+          python -c "
+          import os, base64, json, urllib.request
+          token = os.environ['TOKEN']
+          repo = 'Kimbe6688/shanxi-iptv-diyp'
+          path = '%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.txt'
+          with open('山西联通DIYP.txt', 'rb') as f:
+              content = base64.b64encode(f.read()).decode()
+          req = urllib.request.Request(
+              f'https://api.github.com/repos/{repo}/contents/{path}',
+              headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'}
+          )
+          try:
+              resp = urllib.request.urlopen(req)
+              sha = json.loads(resp.read())['sha']
+          except:
+              sha = None
+          body = {'message': 'chore: rebuild DIYP txt', 'content': content}
+          if sha:
+              body['sha'] = sha
+          req2 = urllib.request.Request(
+              f'https://api.github.com/repos/{repo}/contents/{path}',
+              data=json.dumps(body).encode(),
+              headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json'},
+              method='PUT'
+          )
+          resp2 = urllib.request.urlopen(req2)
+          print('OK:', resp2.status)
+          "
+
+# build.py 无需改动，保持你当前能生成 195 个频道的版本即可。
