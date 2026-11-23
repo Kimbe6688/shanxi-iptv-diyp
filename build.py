@@ -9,6 +9,7 @@ TXT 格式:
 
 说明:
     - 保留同一频道的全部清晰度 / 多地址（按 URL 去重），电视端可自行选择。
+    - 同一分类内同名频道用罗马数字后缀区分：SD → SDⅠ、SDⅡ，比阿拉伯数字好看。
     - 「本省」「卫视」两个分类都把 山西卫视 置顶；源里没有则不强制。
 """
 
@@ -18,6 +19,12 @@ import urllib.request
 SRC = "https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/main/m3u/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9A.m3u"
 OUT_TXT = "山西联通DIYP.txt"
 OUT_M3U = "山西联通DIYP.m3u"
+
+# 同名多源的区分后缀（罗马数字，比 1/2 好看；超过 12 路回落为数字）
+ROMAN = ["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ", "Ⅺ", "Ⅻ"]
+
+def roman(n):
+    return ROMAN[n - 1] if 1 <= n <= len(ROMAN) else str(n)
 
 # ==================== 分类规则 ====================
 # 顺序即优先级：先匹配到的先生效
@@ -76,8 +83,9 @@ def clean_name(name):
     return name.strip()
 
 def epg_id(name):
-    """生成用于匹配 EPG 的台名：去掉 HD/SD/4K 等清晰度后缀。
+    """生成用于匹配 EPG 的台名：去掉罗马数字与 HD/SD/4K 等清晰度后缀。
     上游 EPG 的台名形如 CCTV1、山西卫视，带后缀会一条都匹配不上。"""
+    name = re.sub(r"[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]$", "", name)
     return re.sub(r"(2160|超清|高清|标清|8K|4K|HD|SD)+$", "", name, flags=re.I).strip() or name
 
 def fetch_source():
@@ -93,6 +101,21 @@ def fetch_source():
 def pick_hd(items):
     """同一频道优先取高清 / 4K 的一条"""
     return next((x for x in items if re.search(r"4K|8K|2160|超清|HD|高清", x[0], re.I)), items[0])
+
+def numbered_names(items):
+    """同名多源加罗马数字后缀：山西卫视SD → 山西卫视SDⅠ、山西卫视SDⅡ。
+    只有一条的保持原名；超过 12 路时后缀回落成数字。"""
+    counts = {}
+    for name, _ in items:
+        base = re.sub(r"[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]$", "", name)
+        counts[base] = counts.get(base, 0) + 1
+    seen = {}
+    out = []
+    for name, _ in items:
+        base = re.sub(r"[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]$", "", name)
+        seen[base] = seen.get(base, 0) + 1
+        out.append(f"{base}{roman(seen[base])}" if counts[base] > 1 else base)
+    return out
 
 # ==================== 主流程 ====================
 def main():
@@ -141,15 +164,16 @@ def main():
             continue
         if g == "本省":
             items.sort(key=lambda x: bensheng_key(x[0]))
+        names = numbered_names(items)
         txt.append(f"{g},#genre#")
-        for idx, (name, url) in enumerate(items, start=1):
-            txt.append(f"{idx:03d} {name},{url}")
-            eid = epg_id(name)
+        for idx, ((name, url), disp) in enumerate(zip(items, names), start=1):
+            txt.append(f"{idx:03d} {disp},{url}")
+            eid = epg_id(disp)
             attrs = attrs_by_url.get(url, "")
             attrs = re.sub(r'tvg-id="[^"]*"', f'tvg-id="{eid}"', attrs).strip()
             if "tvg-id=" not in attrs:
                 attrs = f'tvg-id="{eid}"'
-            m3u.append(f'#EXTINF:-1 {attrs} group-title="{g}",{name}')
+            m3u.append(f'#EXTINF:-1 {attrs} group-title="{g}",{disp}')
             m3u.append(url)
             total += 1
         txt.append("")
