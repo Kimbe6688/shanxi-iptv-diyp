@@ -14,7 +14,13 @@ TXT 格式:
 """
 
 import re
+import os
+import io
+import json
+import base64
 import urllib.request
+import urllib.error
+import urllib.parse
 
 SRC = "https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/main/m3u/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9A.m3u"
 OUT_TXT = "山西联通DIYP.txt"
@@ -182,10 +188,98 @@ def main():
     with open(OUT_M3U, "w", encoding="utf-8") as f:
         f.write("\n".join(m3u) + "\n")
 
+    # ★ 每次更新源后同步台标（按 tvg-id）
+    tvg_ids = set(re.findall(r'tvg-id="([^"]*)"', "\n".join(m3u)))
+    sync_icons(tvg_ids)
+
     print(f"OK 共 {total} 个频道 -> {OUT_TXT} / {OUT_M3U}")
     for g in ORDER:
         if g in groups:
             print(f"  {g}: {len(groups[g])}")
+
+# ==================== 台标同步（每次更新源后自动同步到仓库 icons/） ====================
+ICONS_DIR = "icons"
+MANIFEST = "icons/manifest.json"
+GITHUB_API = "https://api.github.com/repos/Kimbe6688/shanxi-iptv-diyp/contents/"
+
+def make_icon(tvg_id):
+    """按 tvg-id 生成统一风格文字台标（深灰底+蓝框+白字）。"""
+    from PIL import Image, ImageDraw, ImageFont
+    im = Image.new("RGB", (200, 120), (20, 23, 28))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((4, 4, 196, 116), radius=16, outline=(76, 141, 255), width=3)
+    fp = None
+    for p in ["C:/Windows/Fonts/msyhbd.ttc", "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
+              "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"]:
+        if os.path.exists(p):
+            fp = p
+            break
+    try:
+        f = ImageFont.truetype(fp, 56 if len(tvg_id) <= 4 else 40) if fp else ImageFont.load_default()
+    except Exception:
+        f = ImageFont.load_default()
+    txt = tvg_id if len(tvg_id) <= 5 else tvg_id[:5]
+    bb = d.textbbox((0, 0), txt, font=f)
+    w, h = bb[2] - bb[0], bb[3] - bb[1]
+    d.text(((200 - w) // 2, (120 - h) // 2 - 6), txt, font=f, fill=(255, 255, 255))
+    buf = io.BytesIO()
+    im.save(buf, "PNG")
+    return buf.getvalue()
+
+def gh_put(path, content_bytes, message, token):
+    """通过 GitHub Contents API 写文件（存在则带 sha 更新）。"""
+    url = GITHUB_API + urllib.parse.quote(path)
+    payload = {"message": message, "branch": "main",
+               "content": base64.b64encode(content_bytes).decode()}
+    try:
+        req = urllib.request.Request(url, headers={"Authorization": f"token {token}",
+                                                   "Accept": "application/vnd.github+json"})
+        old = json.loads(urllib.request.urlopen(req, timeout=20).read().decode())
+        payload["sha"] = old["sha"]
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=data, method="PUT",
+                                 headers={"Authorization": f"token {token}",
+                                          "Accept": "application/vnd.github+json",
+                                          "Content-Type": "application/json"})
+    return urllib.request.urlopen(req, timeout=30).read().decode()
+
+def sync_icons(tvg_ids):
+    """每次更新源后：缺的图标生成并上传，manifest 记录 tvg-id -> 文件名。"""
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        print("[warn] 未配置 GITHUB_TOKEN，跳过台标同步")
+        return
+    import pathlib
+    pathlib.Path(ICONS_DIR).mkdir(exist_ok=True)
+    manifest = {}
+    try:
+        req = urllib.request.Request(GITHUB_API + urllib.parse.quote(MANIFEST),
+                                     headers={"Authorization": f"token {token}",
+                                              "Accept": "application/vnd.github+json"})
+        old = json.loads(urllib.request.urlopen(req, timeout=20).read().decode())
+        manifest = json.loads(base64.b64decode(old["content"]).decode("utf-8"))
+    except Exception:
+        pass
+    added = 0
+    for tid in sorted(tvg_ids):
+        if not tid:
+            continue
+        fn = re.sub(r'[\\/:*?"<>|]', "_", tid) + ".png"
+        if fn in manifest.values():
+            continue
+        try:
+            gh_put(f"{ICONS_DIR}/{fn}", make_icon(tid), f"icon: {tid}", token)
+            manifest[tid] = fn
+            added += 1
+        except Exception as e:
+            print(f"[warn] 图标上传失败 {tid}: {e}")
+    if added or not manifest:
+        gh_put(MANIFEST, json.dumps(manifest, ensure_ascii=False, indent=1).encode("utf-8"),
+               f"icons manifest: {len(manifest)}", token)
+    print(f"[icons] 台标同步完成：新增 {added}，共 {len(manifest)}")
 
 if __name__ == "__main__":
     main()
