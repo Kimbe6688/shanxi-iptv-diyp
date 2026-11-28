@@ -5,6 +5,11 @@ on:
     # 源项目 sheriffcheng-gif/my-iptv 每天 UTC 00:00 / 12:00 更新，这里延后 5 分钟
     - cron: "5 0,12 * * *"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - build.py
+      - .github/workflows/build.yml
 
 permissions:
   contents: write
@@ -28,13 +33,15 @@ jobs:
       - name: 生成分类文件 + 同步台标
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python build.py
+        run: |
+          rm -f 山西联通DIYP.txt 山西联通DIYP.m3u
+          python build.py
 
       - name: 提交结果
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 山西联通DIYP.txt 山西联通DIYP.m3u icons/
+          git add -A
           if git diff --cached --quiet; then
             echo "no changes, skip commit"
             exit 0

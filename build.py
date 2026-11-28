@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 拉取山西联通组播源 -> 按分类写成 DIYP TXT 与 M3U
-输出: 山西联通DIYP.txt（DIYP 分类列表）
-      山西联通DIYP.m3u（同一份列表的 M3U 版，group-title 即分类）
+输出: shanxiunicomlive.txt（DIYP 分类列表）
+      shanxiunicomlive.m3u（同一份列表的 M3U 版，group-title 即分类）
 TXT 格式:
     分类,#genre#
     001 频道名,地址
@@ -23,8 +23,8 @@ import urllib.error
 import urllib.parse
 
 SRC = "https://raw.githubusercontent.com/sheriffcheng-gif/my-iptv/main/m3u/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9A.m3u"
-OUT_TXT = "山西联通DIYP.txt"
-OUT_M3U = "山西联通DIYP.m3u"
+OUT_TXT = "shanxiunicomlive.txt"
+OUT_M3U = "shanxiunicomlive.m3u"
 
 # 同名多源的区分后缀（罗马数字，比 1/2 好看；超过 12 路回落为数字）
 ROMAN = ["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ", "Ⅺ", "Ⅻ"]
@@ -200,7 +200,7 @@ def main():
 # ==================== 台标同步（每次更新源后自动同步到仓库 icons/） ====================
 ICONS_DIR = "icons"
 MANIFEST = "icons/manifest.json"
-GITHUB_API = "https://api.github.com/repos/Kimbe6688/shanxi-iptv-diyp/contents/"
+GITHUB_API = "https://api.github.com/repos/Kimbe6688/shanxiunicomlive/contents/"
 
 def make_icon(tvg_id):
     """按 tvg-id 生成统一风格文字台标（深灰底+蓝框+白字）。"""

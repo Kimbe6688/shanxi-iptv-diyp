@@ -11,7 +11,7 @@ VsTV、DIYP 影音等播放器是「空壳 APP」，本身不带频道，需在�
 本仓库生成，按「本省 / 央视 / 影院 / 4K / 卫视 / 其他」用 `group-title` 分组，保留上游的台标与 EPG 节目单。标准 M3U，支持 M3U 的播放器都能订阅。
 
 ```
-https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/山西联通DIYP.m3u
+https://cdn.jsdelivr.net/gh/Kimbe6688/shanxiunicomlive@main/shanxiunicomlive.m3u
 ```
 
 ### TXT（备选：DIYP 分类列表）
@@ -19,47 +19,39 @@ https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/山西联通DIYP.m3u
 同一份频道列表的 DIYP 版本，`分类名,#genre#` 分组、三位序号，逗号后就是播放地址，**不需要再另填 M3U**。
 
 ```
-https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/山西联通DIYP.txt
+https://cdn.jsdelivr.net/gh/Kimbe6688/shanxiunicomlive@main/shanxiunicomlive.txt
 ```
 
-### 等价地址（编码 / 加速 / 备用）
+### 加速 / 备用地址
 
-内容完全相同，按需替换。GitHub Proxy 的规则是在原地址前加 `https://gh-proxy.com/` 前缀，**M3U 和 TXT 都适用**。
+文件名和仓库名都是纯英文，不再需要 URL 编码版。内容完全相同，按需替换。GitHub Proxy 的规则是在原地址前加 `https://gh-proxy.com/` 前缀，**M3U 和 TXT 都适用**。
 
 **M3U**
 
-- 编码版（播放器不认中文路径）：
+- GitHub Proxy 加速：
 
 ```
-https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.m3u
+https://gh-proxy.com/https://raw.githubusercontent.com/Kimbe6688/shanxiunicomlive/main/shanxiunicomlive.m3u
 ```
 
-- GitHub Proxy 加速 / raw 备用（jsDelivr 缓存未刷新时用 raw）：
+- raw 备用（jsDelivr 缓存未刷新时用）：
 
 ```
-https://gh-proxy.com/https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.m3u
-```
-
-```
-https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.m3u
+https://raw.githubusercontent.com/Kimbe6688/shanxiunicomlive/main/shanxiunicomlive.m3u
 ```
 
 **TXT**
 
-- 编码版（播放器不认中文路径）：
+- GitHub Proxy 加速：
 
 ```
-https://cdn.jsdelivr.net/gh/Kimbe6688/shanxi-iptv-diyp@main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.txt
+https://gh-proxy.com/https://raw.githubusercontent.com/Kimbe6688/shanxiunicomlive/main/shanxiunicomlive.txt
 ```
 
-- GitHub Proxy 加速 / raw 备用：
+- raw 备用：
 
 ```
-https://gh-proxy.com/https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.txt
-```
-
-```
-https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A5%BF%E8%81%94%E9%80%9ADIYP.txt
+https://raw.githubusercontent.com/Kimbe6688/shanxiunicomlive/main/shanxiunicomlive.txt
 ```
 
 ## 节目列表格式
@@ -68,14 +60,14 @@ https://raw.githubusercontent.com/Kimbe6688/shanxi-iptv-diyp/main/%E5%B1%B1%E8%A
 
 ```
 本省,#genre#
-001 山西卫视HD,http://183.188.165.191:8888/rtp/226.0.2.152:9128
-002 山西卫视SDⅠ,http://183.188.165.191:8888/rtp/226.0.2.11:8000
-003 山西卫视SDⅡ,http://183.188.165.191:8888/rtp/226.0.2.189:9424
-004 山西黄河HD,http://183.188.165.191:8888/rtp/226.0.2.235:9792
+001 山西卫视HD,http://118.79.113.195:6000/rtp/226.0.2.152:9128
+002 山西卫视SDⅠ,http://118.79.113.195:6000/rtp/226.0.2.11:8000
+003 山西卫视SDⅡ,http://118.79.113.195:6000/rtp/226.0.2.189:9424
+004 山西黄河HD,http://118.79.113.195:6000/rtp/226.0.2.235:9792
 
 卫视,#genre#
-001 山西卫视HD,http://183.188.165.191:8888/rtp/226.0.2.152:9128
-002 重庆卫视HD,http://183.188.165.191:8888/rtp/226.0.2.174:9304
+001 山西卫视HD,http://118.79.113.195:6000/rtp/226.0.2.152:9128
+002 重庆卫视HD,http://118.79.113.195:6000/rtp/226.0.2.174:9304
 ```
 
 - `分类名,#genre#` 是分组标题，输出顺序固定：**本省 → 央视 → 影院 → 4K → 卫视 → 其他**
